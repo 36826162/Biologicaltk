@@ -1,0 +1,245 @@
+Imports System.IO
+Imports System.Text
+Imports System.Collections
+Imports System.Windows
+Imports StudentRegistration
+
+Public Class Form1
+
+    Private Sub Form1_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+
+        ' GetFilePath()
+
+       
+
+    End Sub
+
+    Public Function GetFilePath() As String
+
+        Dim fullFilename As String
+
+        ' OpenFileDialogs have a Dispose method that should
+
+        ' be called when you have finished using it. The
+
+        ' Using block will automatically call Dispose.
+
+        Using ofd As New OpenFileDialog
+
+            ' Give the user some info:
+
+            ofd.Title = "Select file to copy"
+
+            ' Set the file filter, it looks bad if it is empty.
+
+            ofd.Filter = "All files (*.*)|*.*"
+
+            If ofd.ShowDialog = Windows.Forms.DialogResult.OK Then
+
+                fullFilename = ofd.FileName
+
+            Else
+
+                ' User cancelled.
+                GetFilePath = String.Empty
+                Exit Function
+
+            End If
+
+        End Using
+
+        GetFilePath = fullFilename
+
+    End Function
+
+
+
+
+
+    Private Sub btnStoreData_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnStoreData.Click
+        StoreData()
+    End Sub
+
+    Public Sub StoreData()
+
+
+        Dim Title As String
+        Dim Initials As String
+        Dim Surname As String
+        Dim Address As String
+        Dim BirthDate As DateTime
+        Dim Gender As String
+
+        DateTimePicker1.CustomFormat = "dd-mm-yyyy"
+        BirthDate = Convert.ToDateTime(DateTimePicker1.Value.ToShortDateString())
+
+        Title = cbmTitle.SelectedItem
+        ' lbTitle.Items.Add(Title)
+        Initials = txtInitials.Text
+        Surname = txtSurname.Text
+        Address = txtAddress.Text
+
+        If (rbnMale.Checked = True) Then
+            Gender = "Male"
+        Else
+            Gender = "Female"
+        End If
+
+
+        If Title <> String.Empty And Initials <> String.Empty And Surname <> String.Empty And Address <> String.Empty Then
+            Try
+
+
+                Dim data() As Integer = New Integer() {}
+                'Dim data() As Integer
+                ' Open file for writing text 
+                Dim writer As StreamWriter = File.AppendText("C:\StudTextFile.txt")
+
+                ' Write data in csv (comma separated value) format:            
+                ' writer.Write("{0},{1},{2},{3},{4},{5},{6},{7}", myDate, lastname, fullnames, email, password, confirmPassword, role, AssignedBy, UBound(data))
+                writer.Write("{0},{1},{2},{3},{4},{5},{6}" & vbCrLf & "", GetNextNum(), BirthDate, Title, Initials, Surname, Address, Gender)
+
+                'Dim val As string
+                Dim val As String
+                For Each val In data
+                    writer.Write("," & val)
+                Next
+                ' Close StreamWriter when done 
+                writer.Close()
+
+
+                MessageBox.Show("Record Saved.")
+
+                lblAutoGenNum.Text = GetNextNum()
+
+            Catch ex As Exception
+
+                MessageBox.Show(ex.Message + "Error occurred!")
+
+            Finally
+
+                ClearFields()
+
+            End Try
+        Else
+            MessageBox.Show("Please enter all fields.")
+        End If
+
+    End Sub
+
+    Public Sub ClearFields()
+
+        DateTimePicker1.Value = Date.Now()
+        cbmTitle.SelectedItem = ""
+        txtInitials.Clear()
+        txtSurname.Clear()
+        txtAddress.Clear()
+        rbnFemale.Checked = False
+        rbnMale.Checked = False
+
+    End Sub
+
+    Public Function GetNextNum() As String
+
+        Dim iCurrentNum As Integer
+        Dim iNextNum As Integer
+        iCurrentNum = Integer.Parse(lblAutoGenNum.Text)
+        iNextNum = iCurrentNum + 1
+
+
+        GetNextNum = iNextNum.ToString()
+    End Function
+
+
+    Private Sub Button1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button1.Click
+        ' OpenFileDialog1.ShowDialog()
+        Dim strFilename As String
+        strFilename = String.Empty
+
+        strFilename = GetFilePath()
+
+        Try
+            Dim myFile As New AutoGenerateNo
+
+            myFile.LoadReader(strFilename)
+            ' MessageBox.Show(myFile.GetContent, "test")
+
+            lblAutoGenNum.Text = myFile.GetRecordCount.ToString()
+            myFile.CloseReader()
+        Catch exx As Exception
+
+            MessageBox.Show(exx.Message.ToString(), "error message")
+        Finally
+            If lblAutoGenNum.Text <> String.Empty Then
+                GroupBox1.Enabled = True
+                btnStoreData.Enabled = True
+            End If
+
+        End Try
+    End Sub
+End Class
+
+
+
+Imports System.IO
+Imports System.Text
+Imports System.Collections
+Imports System.Windows
+
+Public Class AutoGenerateNo
+
+    Public writer As StreamWriter
+    Public reader As StreamReader
+    Public strOutput As String
+    Public iOutput As Integer
+
+    Public Sub LoadWriter(ByVal filePath As String)
+
+        writer = File.AppendText("C:\StudTextFile.txt")
+
+    End Sub
+
+    Public Sub LoadReader(ByVal filePath As String)
+
+        If System.IO.File.Exists(filePath) = True Then
+            Dim objReader As New System.IO.StreamReader(filePath)
+            reader = objReader
+        End If
+
+    End Sub
+    Public Sub CloseReader()
+        reader.Close()
+    End Sub
+
+    Public Function GetContent() As String
+        Dim TextLine As String
+
+        Dim iLen As Integer
+
+        iLen = 0
+        TextLine = ""
+
+        Do While reader.Peek() <> -1
+
+            TextLine = TextLine & reader.ReadLine() & vbNewLine
+        Loop
+
+        GetContent = TextLine
+    End Function
+
+    Public Function GetRecordCount() As Integer
+        Dim iLen As Integer
+
+        iLen = 0
+        Do While reader.Peek() <> -1
+
+            reader.ReadLine()
+            iLen = iLen + 1
+
+        Loop
+
+        GetRecordCount = iLen
+
+    End Function
+
+End Class
